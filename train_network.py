@@ -13,7 +13,7 @@ import torch.optim as optim
 import torch.utils.data
 from torchsummary import summary
 
-from hardware.device import get_device
+# from hardware.device import get_device
 from inference.models import get_network
 from inference.post_process import post_process_output
 from utils.data import get_dataset
@@ -125,7 +125,7 @@ def validate(net, device, val_data, iou_threshold):
 
             s = evaluation.calculate_iou_match(q_out,
                                                ang_out,
-                                               val_data.dataset.get_gtbb(didx, rot, zoom_factor),
+                                               val_data.dataset.get_gtbb(didx, rot.item(), zoom_factor.item()),
                                                no_grasps=1,
                                                grasp_width=w_out,
                                                threshold=iou_threshold
@@ -243,7 +243,7 @@ def run():
     logging.getLogger('').addHandler(console)
 
     # Get the compute device
-    device = get_device(args.force_cpu)
+    device = 'cuda'
 
     # Load Dataset
     logging.info('Loading {} Dataset...'.format(args.dataset.title()))
