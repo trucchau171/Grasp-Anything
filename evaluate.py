@@ -124,10 +124,10 @@ if __name__ == '__main__':
         start_time = time.time()
 
         with torch.no_grad():
-            for idx, (x, y, didx, rot, zoom) in enumerate(test_data):
+            for idx, (x, y, didx, rot, zoom, prompt) in enumerate(test_data):
                 xc = x.to(device)
                 yc = [yi.to(device) for yi in y]
-                lossd = net.compute_loss(xc, yc)
+                lossd = net.compute_loss(xc, yc, prompt)
 
                 q_img, ang_img, width_img = post_process_output(lossd['pred']['pos'], lossd['pred']['cos'],
                                                                 lossd['pred']['sin'], lossd['pred']['width'])
