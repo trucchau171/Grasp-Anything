@@ -14,5 +14,8 @@ def get_dataset(dataset_name):
     elif dataset_name == 'ocid':
         from .ocid_grasp_data import OCIDGraspDataset
         return OCIDGraspDataset
+    elif dataset_name == 'grasp-anything++':
+        from .grasp_anything_plus_data import GraspAnythingPlusDataset
+        return GraspAnythingPlusDataset
     else:
         raise NotImplementedError('Dataset Type {} is Not implemented'.format(dataset_name))
