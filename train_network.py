@@ -112,7 +112,8 @@ def validate(net, device, val_data, iou_threshold):
         for x, y, didx, rot, zoom_factor, prompt in val_data:
             xc = x.to(device)
             yc = [yy.to(device) for yy in y]
-            lossd = net.compute_loss(xc, yc, prompt)
+            # lossd = net.compute_loss(xc, yc, prompt)
+            lossd = net.compute_loss(xc, yc)
 
             loss = lossd['loss']
 
@@ -171,7 +172,8 @@ def train(epoch, net, device, train_data, optimizer, batches_per_epoch, vis=Fals
 
             xc = x.to(device)
             yc = [yy.to(device) for yy in y]
-            lossd = net.compute_loss(xc, yc, prompt)
+            # lossd = net.compute_loss(xc, yc, prompt)
+            lossd = net.compute_loss(xc, yc)
 
             loss = lossd['loss']
 
