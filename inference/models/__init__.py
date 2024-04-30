@@ -22,5 +22,8 @@ def get_network(network_name):
     elif network_name == 'ggcnn':
         from .ggcnn import GGCNN
         return GGCNN
+    elif network_name == 'grconvnet3_diff':
+        from .grconvnet3_diff import GenerativeResnet_Diff
+        return GenerativeResnet_Diff
     else:
         raise NotImplementedError('Network {} is not implemented'.format(network_name))
