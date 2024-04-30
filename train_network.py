@@ -297,7 +297,7 @@ def run():
         dropout=args.use_dropout,
         prob=args.dropout_prob,
         channel_size=args.channel_size,
-        is_aligned=args.is_aligned
+        # is_aligned=args.is_aligned
     )
 
     net = net.to(device)
