@@ -112,7 +112,7 @@ def parse_args():
     return args
 
 
-def validate(net, device, val_data, iou_threshold):
+def validate(net, device, val_data, iou_threshold, diffusion):
     """
     Run validation.
     :param net: Network
@@ -132,14 +132,56 @@ def validate(net, device, val_data, iou_threshold):
         }
     }
 
+    use_ddim = False  # FIXME - hardcoded
+    clip_denoised = False  # FIXME - hardcoded
+
     ld = len(val_data)
 
     with torch.no_grad():
+        sample_fn = (
+            diffusion.p_sample_loop if not use_ddim else diffusion.ddim_sample_loop
+        )
         for x, y, didx, rot, zoom_factor, prompt in val_data:
             xc = x.to(device)
             yc = [yy.to(device) for yy in y]
+
+            sample = sample_fn(
+                net,
+                yc.shape,
+                given_x=xc,
+                clip_denoised=clip_denoised,
+                model_kwargs=None,
+                skip_timesteps=0,  # 0 is the default value - i.e. don't skip any step
+                init_image=None,
+                progress=False,
+                dump_steps=None,
+                noise=None,
+                const_noise=False,
+                # when experimenting guidance_scale we want to nutrileze the effect of noise on generation
+            )
+
+            y_pos, y_cos, y_sin, y_width = yc
+            [pos_pred, cos_pred, sin_pred, width_pred] = sample['pred_xstart']
+            pred_sample = sample['sample']
+
+            recon_loss_semantics = ((yc-pred_sample)**2).mean()
+
+            p_loss = F.smooth_l1_loss(pos_pred, y_pos)
+            cos_loss = F.smooth_l1_loss(cos_pred, y_cos)
+            sin_loss = F.smooth_l1_loss(sin_pred, y_sin)
+            width_loss = F.smooth_l1_loss(width_pred, y_width)
+
+
             # lossd = net.compute_loss(xc, yc, prompt)
-            lossd = net.compute_loss(xc, yc)
+            lossd =  {
+                'loss': p_loss + cos_loss + sin_loss + width_loss,
+                'losses': {
+                    'p_loss': p_loss,
+                    'cos_loss': cos_loss,
+                    'sin_loss': sin_loss,
+                    'width_loss': width_loss
+                }
+            }
 
             loss = lossd['loss']
 
@@ -165,7 +207,7 @@ def validate(net, device, val_data, iou_threshold):
             else:
                 results['failed'] += 1
 
-    return results
+    return results, recon_loss_semantics
 
 
 def train(epoch, net, diffusion, device, train_data, optim, batches_per_epoch, lr=1e-3, vis=False):
@@ -210,9 +252,6 @@ def train(epoch, net, diffusion, device, train_data, optim, batches_per_epoch, l
 
     net.train()
     torch.autograd.set_detect_anomaly(True)
-    total_recon_loss_semantics = 0
-    total_semantics_recon_acc = 0
-    total_train_loss = 0
 
     batch_idx = 0
     # Use batches per epoch to make training on different sized datasets (cornell/jacquard) more equivalent.
@@ -236,7 +275,8 @@ def train(epoch, net, diffusion, device, train_data, optim, batches_per_epoch, l
 
             lossd = diffusion.training_losses(net, yc, t, xc)
 
-            loss = lossd['loss']
+            loss = (lossd['loss'] * weights).mean()
+
 
             if batch_idx % 100 == 0:
                 logging.info('Epoch: {}, Batch: {}, Loss: {:0.4f}'.format(epoch, batch_idx, loss.item()))
@@ -394,9 +434,10 @@ def run():
 
         # Run Validation
         logging.info('Validating...')
-        test_results = validate(net, device, val_data, args.iou_threshold)
+        test_results, recon_loss_semantics = validate(net, device, val_data, args.iou_threshold, diffusion)
         logging.info('%d/%d = %f' % (test_results['correct'], test_results['correct'] + test_results['failed'],
                                      test_results['correct'] / (test_results['correct'] + test_results['failed'])))
+        logging.info('recon_loss_semantics Loss: {:0.4f}'.format(recon_loss_semantics))
 
         # Log validation results to tensorbaord
         tb.add_scalar('loss/IOU', test_results['correct'] / (test_results['correct'] + test_results['failed']), epoch)

@@ -13,12 +13,12 @@ class GraspModel(nn.Module):
     def forward(self, x_in):
         raise NotImplementedError()
 
-    def compute_loss(self, xc, yc, timesteps=None, prompt=None):
+    def compute_loss(self, x, xc, yc, timesteps=None, prompt=None):
         y_pos, y_cos, y_sin, y_width = yc	      
         if prompt is not None:
-            pos_pred, cos_pred, sin_pred, width_pred = self(xc, timesteps, prompt)
+            [pos_pred, cos_pred, sin_pred, width_pred] = self(x, timesteps, xc, prompt)
         else:
-            pos_pred, cos_pred, sin_pred, width_pred = self(xc, timesteps)
+            [pos_pred, cos_pred, sin_pred, width_pred] = self(x, timesteps, xc)
 
         p_loss = F.smooth_l1_loss(pos_pred, y_pos)
         cos_loss = F.smooth_l1_loss(cos_pred, y_cos)

@@ -7,7 +7,7 @@ from inference.models.diffusion_utils import *
 
 class GenerativeResnet_Diff(GraspModel):
 
-    def __init__(self, input_channels=4, output_channels=1, channel_size=32, dropout=False, prob=0.0, latent_dim=255):
+    def __init__(self, input_channels=4, output_channels=1, channel_size=32, dropout=False, prob=0.0, latent_dim=224):
         super(GenerativeResnet_Diff, self).__init__()
         self.latent_dim = latent_dim
 
@@ -60,7 +60,7 @@ class GenerativeResnet_Diff(GraspModel):
         # self.output_process = OutputProcess(self.data_rep, self.xyz_dim, self.extract_dim, self.pcd_points).to(self.device)
 
 
-    def forward(self, x_in, timesteps):
+    def forward(self, x_in, timesteps, given_x):
         """
         x: noisy signal - torch.Tensor.shape([bs,..])
         timesteps: torch.Tensor.shape([bs,])
@@ -68,8 +68,10 @@ class GenerativeResnet_Diff(GraspModel):
         # Embed features from time
         emb_ts = self.embed_timestep(timesteps)
         emb_ts = emb_ts.permute(1, 0, 2)
+        # Add level noise to the output
+        given_x = given_x + emb_ts
 
-        x = F.relu(self.bn1(self.conv1(x_in)))
+        x = F.relu(self.bn1(self.conv1(given_x)))
         x = F.relu(self.bn2(self.conv2(x)))
         x = F.relu(self.bn3(self.conv3(x)))
         x = self.res1(x)
@@ -81,8 +83,8 @@ class GenerativeResnet_Diff(GraspModel):
         x = F.relu(self.bn5(self.conv5(x)))
         x = self.conv6(x)
 
-        # Add noise to the output
-        x = x + emb_ts
+        # add noise to the output
+        x = x + x_in
 
         if self.dropout:
             pos_output = self.pos_output(self.dropout_pos(x))
@@ -97,4 +99,4 @@ class GenerativeResnet_Diff(GraspModel):
 
         # shape conv6 [8, 32, 225, 225], pos_output [8, 1, 224, 224], cos_output [8, 1, 224, 224], sin_output [8, 1, 224, 224], width_output [8, 1, 224, 224]
 
-        return pos_output, cos_output, sin_output, width_output
+        return [pos_output, cos_output, sin_output, width_output]

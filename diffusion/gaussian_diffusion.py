@@ -280,7 +280,7 @@ class GaussianDiffusion:
         return posterior_mean, posterior_variance, posterior_log_variance_clipped
 
     def p_mean_variance(
-        self, model, x, mask, t, given_objs, given_cats, y, clip_denoised=True, denoised_fn=None, model_kwargs=None
+        self, model, x, t, given_x, clip_denoised=True, denoised_fn=None, model_kwargs=None
     ):
         """
         Apply the model to get p(x_{t-1} | x_t), as well as a prediction of
@@ -307,7 +307,7 @@ class GaussianDiffusion:
 
         B, C = x.shape[:2]
         assert t.shape == (B,)
-        _, model_output = model(x, mask, self._scale_timesteps(t), given_objs, given_cats, y)
+        model_output = model(x, self._scale_timesteps(t), given_x)
 
         # if 'inpainting_mask' in model_kwargs['y'].keys() and 'inpainted_motion' in model_kwargs['y'].keys():
         #     inpainting_mask, inpainted_motion = model_kwargs['y']['inpainting_mask'], model_kwargs['y']['inpainted_motion']
@@ -502,11 +502,8 @@ class GaussianDiffusion:
         self,
         model,
         x,
-        mask,
         t,
-        given_objs, 
-        given_cats,
-        y,
+        given_x,
         clip_denoised=True,
         denoised_fn=None,
         cond_fn=None,
@@ -533,11 +530,8 @@ class GaussianDiffusion:
         out = self.p_mean_variance(
             model,
             x,
-            mask,
             t,
-            given_objs, 
-            given_cats,
-            y,
+            given_x,
             clip_denoised=clip_denoised,
             denoised_fn=denoised_fn,
             model_kwargs=model_kwargs,
@@ -612,10 +606,7 @@ class GaussianDiffusion:
         self,
         model,
         shape,
-        mask,
-        given_objs, 
-        given_cats,
-        y,
+        given_x,
         noise=None,
         clip_denoised=True,
         denoised_fn=None,
@@ -657,10 +648,7 @@ class GaussianDiffusion:
         for i, sample in enumerate(self.p_sample_loop_progressive(
             model,
             shape,
-            mask,
-            given_objs, 
-            given_cats,
-            y,
+            given_x,
             noise=noise,
             clip_denoised=clip_denoised,
             denoised_fn=denoised_fn,
@@ -679,16 +667,14 @@ class GaussianDiffusion:
             final = sample
         if dump_steps is not None:
             return dump
-        return final["sample"]
+        # return final["sample"]
+        return final
 
     def p_sample_loop_progressive(
         self,
         model,
         shape,
-        mask,
-        given_objs, 
-        given_cats,
-        y,
+        given_x,
         noise=None,
         clip_denoised=True,
         denoised_fn=None,
@@ -744,11 +730,8 @@ class GaussianDiffusion:
                 out = sample_fn(
                     model,
                     img,
-                    mask,
                     t,
-                    given_objs, 
-                    given_cats,
-                    y,
+                    given_x,
                     clip_denoised=clip_denoised,
                     denoised_fn=denoised_fn,
                     cond_fn=cond_fn,
@@ -1292,8 +1275,8 @@ class GaussianDiffusion:
             if self.loss_type == LossType.RESCALED_KL:
                 terms["loss"] *= self.num_timesteps
         elif self.loss_type == LossType.MSE or self.loss_type == LossType.RESCALED_MSE:
-            output = model.compute_loss(x_t, y, self._scale_timesteps(t))
-            pred_output = output['pred']
+            output = model.compute_loss(x_t, given_x, x_start, self._scale_timesteps(t))
+            terms['pred'] = output['pred']
             
             # Compute output loss
             terms['losses'] = output['losses']
@@ -1344,7 +1327,7 @@ class GaussianDiffusion:
         else:
             raise NotImplementedError(self.loss_type)
 
-        return terms, pred_output
+        return terms
 
     def fc_loss_rot_repr(self, gt_xyz, pred_xyz, mask):
         def to_np_cpu(x):
