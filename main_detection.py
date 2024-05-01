@@ -261,7 +261,6 @@ def train(epoch, net, diffusion, device, train_data, optim, batches_per_epoch, l
             if batch_idx >= batches_per_epoch:
                 break
 
-            t, weights = schedule_sampler.sample(y.shape[0], device)
 
             # Initialize the optimizer's step
             mp_trainer.zero_grad()
@@ -272,6 +271,8 @@ def train(epoch, net, diffusion, device, train_data, optim, batches_per_epoch, l
             yc = [yy.to(device) for yy in y]
             # lossd = net.compute_loss(xc, yc, prompt)
             # lossd = net.compute_loss(xc, yc)
+
+            t, weights = schedule_sampler.sample(yc.shape[0], device)
 
             lossd = diffusion.training_losses(net, yc, t, xc)
 
