@@ -1275,10 +1275,33 @@ class GaussianDiffusion:
             if self.loss_type == LossType.RESCALED_KL:
                 terms["loss"] *= self.num_timesteps
         elif self.loss_type == LossType.MSE or self.loss_type == LossType.RESCALED_MSE:
-            output = model.compute_loss(x_t, given_x, x_start, self._scale_timesteps(t))
+            output = model(x_t, self._scale_timesteps(t), given_x)
+
+            # Compute output loss
+            # output = pos_pred, cos_pred, sin_pred, width_pred
+            p_loss = F.smooth_l1_loss(output[:,0,:,:], x_start[:,0,:,:])
+            cos_loss = F.smooth_l1_loss(output[:,1,:,:], x_start[:,1,:,:])
+            sin_loss = F.smooth_l1_loss(output[:,2,:,:], x_start[:,2,:,:])
+            width_loss = F.smooth_l1_loss(output[:,3,:,:], x_start[:,3,:,:])
+
+            output = {
+                'loss': p_loss + cos_loss + sin_loss + width_loss,
+                'losses': {
+                    'p_loss': p_loss,
+                    'cos_loss': cos_loss,
+                    'sin_loss': sin_loss,
+                    'width_loss': width_loss
+                },
+                'pred': {
+                    'pos': output[:,0,:,:],
+                    'cos': output[:,1,:,:],
+                    'sin': output[:,2,:,:],
+                    'width': output[:,3,:,:]
+                }
+            }
+
             terms['pred'] = output['pred']
             
-            # Compute output loss
             terms['losses'] = output['losses']
             terms['loss'] = output['loss']
             
