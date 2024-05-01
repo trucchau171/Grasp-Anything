@@ -97,7 +97,10 @@ class GenerativeResnet_Diff(GraspModel):
             sin_output = self.sin_output(x)
             width_output = self.width_output(x)
 
+        output = [pos_output, cos_output, sin_output, width_output]
+        output = torch.cat(output, dim=1)
+
         # shape conv6 [8, 32, 225, 225], pos_output [8, 1, 224, 224], cos_output [8, 1, 224, 224], sin_output [8, 1, 224, 224], width_output [8, 1, 224, 224]
 
-        return [pos_output, cos_output, sin_output, width_output]
+        return output
     
