@@ -14,7 +14,7 @@ import torch
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
-from pytorch3d.loss import chamfer_distance
+# from pytorch3d.loss import chamfer_distance
 from copy import deepcopy
 from diffusion.nn import mean_flat, sum_flat
 from diffusion.losses import normal_kl, discretized_gaussian_log_likelihood
@@ -1318,8 +1318,8 @@ class GaussianDiffusion:
                 ModelMeanType.EPSILON: noise,
             }[self.model_mean_type]
             assert model_output.shape == target.shape == x_start.shape
-            # terms["mse"] = mean_flat(((target - model_output) ** 2))
-            terms["mse"], _ = chamfer_distance(model_output.float(), target.float())
+            terms["mse"] = mean_flat(((target - model_output) ** 2))
+            # terms["mse"], _ = chamfer_distance(model_output.float(), target.float())
             if "vb" in terms:
                 terms["loss"] = terms["mse"] + terms["vb"] + terms["loss"]
             else:
