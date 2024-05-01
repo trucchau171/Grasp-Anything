@@ -274,7 +274,7 @@ def train(epoch, net, diffusion, device, train_data, optim, batches_per_epoch, l
             # lossd = net.compute_loss(xc, yc)
 
             t, weights = schedule_sampler.sample(x.shape[0], device)
-            print(yc.shape ,yc[0].shape)
+            print(yc.shape ,xc.shape)
             lossd = diffusion.training_losses(net, yc, t, xc)
 
             loss = (lossd['loss'] * weights).mean()
