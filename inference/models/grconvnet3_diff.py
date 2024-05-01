@@ -100,3 +100,31 @@ class GenerativeResnet_Diff(GraspModel):
         # shape conv6 [8, 32, 225, 225], pos_output [8, 1, 224, 224], cos_output [8, 1, 224, 224], sin_output [8, 1, 224, 224], width_output [8, 1, 224, 224]
 
         return [pos_output, cos_output, sin_output, width_output]
+    
+    def compute_loss(self, x, xc, yc, timesteps=None, prompt=None):
+        y_pos, y_cos, y_sin, y_width = yc	      
+        if prompt is not None:
+            [pos_pred, cos_pred, sin_pred, width_pred] = self(x, timesteps, xc, prompt)
+        else:
+            [pos_pred, cos_pred, sin_pred, width_pred] = self(x, timesteps, xc)
+
+        p_loss = F.smooth_l1_loss(pos_pred, y_pos)
+        cos_loss = F.smooth_l1_loss(cos_pred, y_cos)
+        sin_loss = F.smooth_l1_loss(sin_pred, y_sin)
+        width_loss = F.smooth_l1_loss(width_pred, y_width)
+
+        return {
+            'loss': p_loss + cos_loss + sin_loss + width_loss,
+            'losses': {
+                'p_loss': p_loss,
+                'cos_loss': cos_loss,
+                'sin_loss': sin_loss,
+                'width_loss': width_loss
+            },
+            'pred': {
+                'pos': pos_pred,
+                'cos': cos_pred,
+                'sin': sin_pred,
+                'width': width_pred
+            }
+        }
