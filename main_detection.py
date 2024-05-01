@@ -48,7 +48,7 @@ python train_contactformer.py --train_data_dir ../data/proxd_train --valid_data_
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='Train network')
+    parser = argparse.ArgumentParser(description='Main Detection Training')
 
     # Network
     parser.add_argument('--network', type=str, default='grconvnet3',

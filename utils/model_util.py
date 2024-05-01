@@ -1,10 +1,9 @@
-from model.sdm import SceneDiffusionModel
 
 from diffusion import gaussian_diffusion as gd
 from diffusion.respace import SpacedDiffusion, space_timesteps
 
-from util.fixseed import fixseed
-from run.train_platforms import ClearmlPlatform, TensorboardPlatform, NoPlatform  # required for the eval operation
+# from util.fixseed import fixseed
+# from run.train_platforms import ClearmlPlatform, TensorboardPlatform, NoPlatform  # required for the eval operation
 
 
 def load_model_wo_clip(model, state_dict):
@@ -13,10 +12,10 @@ def load_model_wo_clip(model, state_dict):
     assert all([k.startswith('clip_model.') for k in missing_keys])
 
 
-def create_model_and_diffusion():
-    model = SceneDiffusionModel(**get_default_model_humanise())
-    diffusion = create_gaussian_diffusion(get_default_diffusion())
-    return model, diffusion
+# def create_model_and_diffusion():
+#     model = SceneDiffusionModel(**get_default_model_humanise())
+#     diffusion = create_gaussian_diffusion(get_default_diffusion())
+#     return model, diffusion
 
 
 def get_default_model_proxd():
@@ -158,13 +157,13 @@ def create_gaussian_diffusion(args):
         # lambda_cat=args['lambda_cat']
     )
 
-def get_training_platform():
-    args = {
-        'seed': 10,
-        'train_platform_type': "NoPlatform",
-        'save_dir': "debug/"
-    }
+# def get_training_platform():
+#     args = {
+#         'seed': 10,
+#         'train_platform_type': "NoPlatform",
+#         'save_dir': "debug/"
+#     }
 
-    fixseed(args['seed'])
-    train_platform_type = eval(args['train_platform_type'])
-    train_platform = train_platform_type(args['save_dir'])
+#     fixseed(args['seed'])
+#     train_platform_type = eval(args['train_platform_type'])
+#     train_platform = train_platform_type(args['save_dir'])
